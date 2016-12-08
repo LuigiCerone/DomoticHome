@@ -279,9 +279,9 @@ void loop()
                     //Serial.println(temp);
              }
           // Send static HTML file.
-          read_file( "header.htm",client ); // l'header.
-          read_file( file_to_load,client ); // la pagina richiesta.
-          read_file( "footer.htm",client ); // il footer.
+          read_file( "header.htm",client ); // Header.
+          read_file( file_to_load,client ); // Requested page.
+          read_file( "footer.htm",client ); // Footer.
            }
           break;
         }
@@ -357,7 +357,7 @@ void xmlResponse(EthernetClient cl)
     else {
         cl.print("OFF");
     }
-    cl.print("</button5>"); //Pompa acqua.
+    cl.print("</button5>"); //Water motor.
     cl.print("<button6>");
     if (digitalRead(livingRoom)) {
         cl.print("ON");
@@ -389,7 +389,7 @@ void xmlResponse(EthernetClient cl)
     else {
         cl.print("Chiusa");
     }
-    cl.print("</button9>"); //Saracinesca.
+    cl.print("</button9>"); //Port close.
     cl.print("<button10>");
     if (digitalRead(entrance)) {
         cl.print("ON");
