@@ -7,5 +7,6 @@ https://www.youtube.com/watch?v=FA91QIYKh5I&t=2s
 
 Dependecies:
   DHT11 library for Arduino.
+  https://github.com/adafruit/DHT-sensor-library/archive/master.zip
   
  All othere pages and code will be added as soon as possible.
