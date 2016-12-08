@@ -17,7 +17,7 @@
 byte mac[] = {  0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
 IPAddress ip (192,168,0,254 );
-IPAddress mioServer(192,168,0,252);
+IPAddress mioServer(192,168,0,252); // Static IP of Raspberry (where data are pushed into a DB). 
 char serverName[] = "192.168.0.252";
 int serverPort = 80;
 
