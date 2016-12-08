@@ -1,0 +1,154 @@
+<html>
+
+<head>
+    <meta name='apple-mobile-web-app-capable' content='yes' />
+    <meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />
+    <style>
+        body {
+            margin: 60px 0px;
+            padding: 0px;
+            text-align: center;
+            background-color: #DCDCDC;
+        }
+        
+        h1 {
+            text-align: center;
+            font-family: Arial, "Trebuchet MS", Helvetica, sans-serif;
+            font-size: 40px;
+        }
+        
+        h2 {
+            text-align: center;
+            font-family: Arial, "Trebuchet MS", Helvetica, sans-serif;
+        }
+        
+        a {
+            text-decoration: none;
+            width: 75px;
+            height: 50px;
+            border-color: #0000CD;
+            border-top: 3px solid;
+            border-bottom: 3px solid;
+            border-right: 3px solid;
+            border-left: 3px solid;
+            border-radius: 10px 10px 10px;
+            -o-border-radius: 10px 10px 10px;
+            -webkit-border-radius: 10px 10px 10px;
+            font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+            -moz-border-radius: 10px 10px 10px;
+            background-color: #00BFFF;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        hr {
+            color: #0000CD;
+            background-color: #0000CD;
+            height: 5px;
+        }
+        
+        .general {
+            font-size: 25px;
+        }
+        
+        a:link {
+            color: white;
+        }
+        /* unvisited link */
+        
+        a:visited {
+            color: white;
+        }
+        /* visited link */
+        
+        a:hover {
+            color: white;
+        }
+        /* mouse over link */
+        
+        a:active {
+            color: black;
+        }
+        /* selected link */
+    </style>
+</head>
+
+<body>
+    <center>
+        <h1><b><u>Domotic house </u></b></h1>
+        <hr>
+        <br> <a href="sala.htm">Living room</a> <a href="bagn.htm">Bathroom</a> <a href="cam1.htm">First bedroom</a> <a href="este.htm">Outisde</a> <a href="scal.htm">Stairs</a> <a href="cam2.htm">Second bedroom</a> <a href="cuci.htm">Kitchen</a> <a href="gara.htm">Garage</a> <a href="ingr.htm">Entrance</a>
+        <br>
+        <br>
+        <hr>
+        <br> </center>
+</body>
+
+</html>
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Domotic</title>
+    <script>
+        function GetArduinoInputs() {
+            //nocache = "&nocache=" + Math.random() * 1000000;
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function () {
+                    if (this.readyState == 4) {
+                        if (this.status == 200) {
+                            if (this.responseXML != null) {
+                                // extract XML data from XML file (containing switch states and analog value)
+                                document.getElementById("input8").innerHTML = this.responseXML.getElementsByTagName('button8')[0].childNodes[0].nodeValue;
+                                // input8 --->Luci.
+                                document.getElementById("input9").innerHTML = this.responseXML.getElementsByTagName('button9')[0].childNodes[0].nodeValue;
+                            }
+                        }
+                    }
+                } // "?ajax"
+            request.open("GET", "?domotica", true);
+            request.send(null);
+            setTimeout('GetArduinoInputs()', 3000);
+        }
+    </script>
+    <meta name='apple-mobile-web-app-capable' content='yes' />
+    <meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' /> </head>
+
+<body onload="GetArduinoInputs()">
+    <br>
+    <hr>
+    <H1>Garage</H1>
+    <br>
+    <br>
+    <center>
+        <table border="0">
+            <tr height="50px">
+                <td>Light :</td>
+                <td><a href="?b7o">Turn on</a></td>
+                <td><a href="?b7f">Turn off</a></td>
+                <td>Status : <span id="input8"></span></td>
+            </tr>
+            <tr height="50px">
+                <td>Door :</td>
+                <td><a href="?b8o">Open</a></td>
+                <td><a href="?b8f">Close</a></td>
+                <td>Status : <span id="input9"></span></td>
+            </tr>
+        </table>
+    </center>
+    <br>
+    <br> </body>
+
+</html>
+<html>
+
+<head> </head>
+
+<body>
+    <br>
+    <hr>
+    <center>
+        <br> Cerone Luigi </center>
+</body>
+
+</html>
