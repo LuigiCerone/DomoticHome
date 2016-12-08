@@ -14,7 +14,7 @@ https://www.youtube.com/watch?v=FA91QIYKh5I&t=2s
 <ul>
 <li>HTM folder contains all the web pages for Arduino SD card reader.</li>
 <li>DomoticHouse contains Arduino's code.</li>
+<li>PHP folder contains both script for insert data into DB and scripts for private area access and data visualization.</li>
+<li>src/main folder contains essential part of the Android app.</li>
 </ul>
 
-  
- All othere pages and code will be added as soon as possible.
