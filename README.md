@@ -9,7 +9,7 @@ https://www.youtube.com/watch?v=FA91QIYKh5I&t=2s
   DHT11 library for Arduino.
   https://github.com/adafruit/DHT-sensor-library/archive/master.zip</p>
   
-<h3>Contents:</h3><br>
+<h3>Contents:</h3>
 <ul>
 <li>HTM folder contains all the web pages for Arduino SD card reader.</li>
 <li>DomoticHouse contains Arduino's code.</li>
