@@ -8,7 +8,7 @@
 #include <SPI.h>
 #include <Ethernet.h>
 #include <SD.h>
-#include <dht11.h>
+#include <DHT.h>
 #include <Servo.h>
 #include <LiquidCrystal.h>
  
@@ -17,7 +17,7 @@
 byte mac[] = {  0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
 IPAddress ip (192,168,0,254 );
-IPAddress mioServer(192,168,0,252); // Static IP of Raspberry (where data are pushed into a DB). 
+IPAddress myServer(192,168,0,252);
 char serverName[] = "192.168.0.252";
 int serverPort = 80;
 
@@ -32,35 +32,42 @@ EthernetServer server(80);
 EthernetClient client;
 
 // All the domotic elements connected to the board .
-#define sala 22 // Living room's led.
-#define ventole 23 // Living room's fan.
-#define allarme 24 // House alarm.
+#define livingRoom 22 // Living room's led.
+#define fan 23 // Living room's fan.
+#define myalarm 24 // House alarm.
 #define garage 25  // Garage's led.
-#define cucina  26 // Kitchen's led.
-#define scale  27 // Stair's led.
-#define camera1  40 // First bedroom's led.
-#define camera2   41 // Second bedroom's led.
-#define bagno  30 // Bathroom's led.
-#define esterno  31 // Garden lights.
-#define ingresso  32 // Entrance's led.
-#define fontana 35 // Motor pin of the outside fountain.
-#define portaGarage 36 // Garage door's led.
-#define corridoio 28 // Corridor's led.
-dht11 DHTInterno; // Outside
-dht11 DHTEsterno; // Inside.
+#define kitchen  26 // Kitchen's led.
+#define stairs  27 // Stair's led.
+#define bedroom1  40 // First bedroom's led.
+#define bedroom2   41 // Second bedroom's led.
+#define bathroom  30 // Bathroom's led.
+#define outisde  31 // Garden lights.
+#define entrance  32 // Entrance's led.
+#define fountain 35 // Motor pin of the outside fountain.
+#define garageDoor 36 // Garage door's led.
+#define corridor 28 // Corridor's led.
 
-#define DHT11Interno_PIN 3
-#define DHT11Esterno_PIN 5
+#define DHTTYPE DHT11   // DHT 11
 
+#define DHT11in_PIN 3
+#define DHT11out_PIN 5
+
+DHT DHTin(DHT11in_PIN, DHTTYPE);
+DHT DHTout(DHT11out_PIN, DHTTYPE);
+
+int intTemp = 0,
+	outTemp = 0,
+	intHum = 0,
+	outHum = 0;
 
 int raffredTemp=20; // Temperature for cooling the living room.
 
 #define reed  33 // Reed sensor's pin for detecting illegal entry.
-boolean allarmeAttivo = false; // Is alarm on?
-#define cigalino 34 // Buzzer's pin.
-#define crepuscolare A0 // Photoresistor pin for automati external lights.
+boolean alarmOn = false; // Is alarm on?
+#define buzzer 34 // Buzzer's pin.
+#define crepuscular A0 // Photoresistor pin for automatic external lights.
 
-int luminosi = 0; // External brightness.
+int brightness = 0; // External brightness.
 
 Servo dx; 
 Servo sx; // Two servoes for each garage door leaf.
@@ -72,7 +79,7 @@ int Asx[] = {40,40,40,45,50,55,60,65,70,75,80,85,90,95,100,115,120,125,130,135,1
 int Cdx[] = {35,35,35,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140}; 
 int Csx[] = {165,160,140,130,125,110,105,100,95,90,85,80,77,75,70,65,60,55,50,45,40,40,40,40,40}; 
 
-int StatoLed[]={0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1};
+int ledStatus[]={0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1};
 int poscorrdx;
 int poscorrsx;
 int x;
@@ -120,73 +127,73 @@ void setup()
   pinMode(53,OUTPUT);
   
   // Configuration stuff.
-  pinMode(sala,OUTPUT);
+  pinMode(livingRoom,OUTPUT);
   pinMode(garage,OUTPUT);
-  pinMode(cucina,OUTPUT);
-  pinMode(scale,OUTPUT);
-  pinMode(bagno,OUTPUT);
-  pinMode(esterno,OUTPUT);
-  pinMode(camera1,OUTPUT);
-  pinMode(camera2,OUTPUT);
-  pinMode(ingresso,OUTPUT);
-  pinMode(ventole,OUTPUT);
-  pinMode(allarme,OUTPUT);
-  pinMode(fontana,OUTPUT);
+  pinMode(kitchen,OUTPUT);
+  pinMode(stairs,OUTPUT);
+  pinMode(bathroom,OUTPUT);
+  pinMode(outisde,OUTPUT);
+  pinMode(bedroom1,OUTPUT);
+  pinMode(bedroom2,OUTPUT);
+  pinMode(entrance,OUTPUT);
+  pinMode(fan,OUTPUT);
+  pinMode(myalarm,OUTPUT);
+  pinMode(fountain,OUTPUT);
   pinMode(reed,INPUT);
   
   digitalWrite(reed, HIGH);    // Pullup on.
   
-  pinMode(crepuscolare,INPUT);
-  pinMode(cigalino,OUTPUT);
-  pinMode(portaGarage,OUTPUT);
-  pinMode(corridoio,OUTPUT);
+  pinMode(crepuscular,INPUT);
+  pinMode(buzzer,OUTPUT);
+  pinMode(garageDoor,OUTPUT);
+  pinMode(corridor,OUTPUT);
   
   
   server.begin(); // Start server on port 80.
   
   // HTML pages checkings.
    if (!SD.exists("header.htm")) {
-        Serial.println("ERRORE - Non ho trovato  header.htm !");
+        Serial.println("ERROR - Can't find  header.htm !");
         return;
     }
    if (!SD.exists("footer.htm")) {
-        Serial.println("ERRORE - Non ho trovato  footer.htm !");
+        Serial.println("ERROR - Can't find  footer.htm !");
         return;
     }
    if (!SD.exists("bagn.htm")) {
-        Serial.println("ERRORE - Non ho trovato  bagn.htm !");
+        Serial.println("ERROR - Can't find  bagn.htm !");
         return;
     }
    if (!SD.exists("cam1.htm")) {
-        Serial.println("ERRORE - Non ho trovato  cam1.htm !");
+        Serial.println("ERROR - Can't find  cam1.htm !");
         return;
     }
    if (!SD.exists("cam2.htm")) { 
-        Serial.println("ERRORE - Non ho trovato  cam2.htm !");
+        Serial.println("ERROR - Can't find  cam2.htm !");
         return;
     }
    if (!SD.exists("cuci.htm")) {
-        Serial.println("ERRORE - Non ho trovato  cuci.htm !");
+        Serial.println("ERROR - Can't find  cuci.htm !");
         return; 
     }
    if (!SD.exists("este.htm")) {
-        Serial.println("ERRORE - Non ho trovato  este.htm !");
+        Serial.println("ERROR - Can't find  este.htm !");
         return;
     }
     if (!SD.exists("gara.htm")) {
-        Serial.println("ERRORE - Non ho trovato  gara.htm !");
+        Serial.println("ERROR - Can't find  gara.htm !");
         return; 
     }
     if (!SD.exists("ingr.htm")) {
-        Serial.println("ERRORE - Non ho trovato  ingr.htm !");
+        Serial.println("ERROR - Can't find  ingr.htm !");
         return;
     }
     if (!SD.exists("sala.htm")) {
-        Serial.println("ERRORE - Non ho trovato  sala.htm !");
+        Serial.println("ERROR - Can't find  sala.htm !");
         return;
     }
     if (!SD.exists("scal.htm")) {
-        Serial.println("ERRORE - Non ho trovato  scal.htm !");
+        Serial.println("ERROR - Can't find  scal.htm !");
         return;
     }
   Serial.print("IP address for server : ");
@@ -203,16 +210,16 @@ void loop()
   if(thisMillis - lastMillis > delayMillis) // If more than 30s have passed refresh data on local server.
   {
     lastMillis = thisMillis;
-    // void leggiTemp(dht11 dht, int dht_pin,int temp, int umid)
-     DHTInterno = leggiTemp(DHTInterno,DHT11Interno_PIN,tempInterna,umidInterna);
-     DHTEsterno = leggiTemp(DHTEsterno,DHT11Esterno_PIN,tempEsterna,umidEsterna);
+    // void readTemp(DHT dht, int dht_pin,int temp, int umid)
+     DHTin = readTemp(DHTin,DHT11in_PIN);
+     DHTout = readTemp(DHTout,DHT11out_PIN);
      
-    sprintf(pageAdd,"/temperature.php?tempI=%u&tempE=%u&umidI=%u&umidE=%u",DHTInterno.temperature,DHTEsterno.temperature,DHTInterno.humidity,DHTInterno.humidity);
+    sprintf(pageAdd,"/temperature.php?tempI=%u&tempE=%u&umidI=%u&umidE=%u",DHTin.readTemperature(),DHTout.readTemperature(),DHTin.readHumidity(),DHTin.readHumidity());
     //tempInterna,tempEsterna,umidInterna,umidEsterna
     Serial.println(pageAdd);
     // sprintf(pageAdd,"/arduino.php?test=%u",totalCount);
 
-    if(!getPage(mioServer,serverPort,pageAdd)) Serial.print(F("Fail "));
+    if(!getPage(myServer,serverPort,pageAdd)) Serial.print(F("Fail "));
   }    
   
   EthernetClient client = server.available();
@@ -285,14 +292,14 @@ void loop()
           currentLineIsBlank = false;
         }
         
-        leggiURL(inString); // Check if there are other kinds of command (i.e. Light on/off etc).
+        readURL(inString); // Check if there are other kinds of command (i.e. Light on/off etc).
       }
     }
     delay(1);
     client.stop();
   }
-  luciEsterne(); // Read outside brightness.
-  allarmeIngresso(); // Check alarm state.
+  outsideLight(); // Read outside brightness.
+  alarm(); // Check alarm state.
 }
  
 void read_file( char* page_html, EthernetClient client )
@@ -312,7 +319,7 @@ void xmlResponse(EthernetClient cl)
     cl.print("<?xml version = \"1.0\" ?>");
     cl.print("<inputs>");
     cl.print("<button1>");
-    if (digitalRead(scale)) {
+    if (digitalRead(stairs)) {
         cl.print("ON");
     }
     else {
@@ -320,7 +327,7 @@ void xmlResponse(EthernetClient cl)
     }
     cl.print("</button1>");
     cl.print("<button2>");
-    if (digitalRead(bagno)) {
+    if (digitalRead(bathroom)) {
         cl.print("ON");
     }
     else {
@@ -328,7 +335,7 @@ void xmlResponse(EthernetClient cl)
     }
     cl.print("</button2>");
     cl.print("<button3>");
-    if (digitalRead(camera1)) {
+    if (digitalRead(bedroom1)) {
         cl.print("ON");
     }
     else {
@@ -336,7 +343,7 @@ void xmlResponse(EthernetClient cl)
     }
     cl.print("</button3>");
     cl.print("<button4>");
-    if (luminosi>950) {
+    if (brightness>950) {
         cl.print("ON");
     }
     else {
@@ -344,7 +351,7 @@ void xmlResponse(EthernetClient cl)
     }
     cl.print("</button4>");
     cl.print("<button5>");
-    if (digitalRead(fontana)) {
+    if (digitalRead(fountain)) {
         cl.print("ON");
     }
     else {
@@ -352,7 +359,7 @@ void xmlResponse(EthernetClient cl)
     }
     cl.print("</button5>"); //Pompa acqua.
     cl.print("<button6>");
-    if (digitalRead(sala)) {
+    if (digitalRead(livingRoom)) {
         cl.print("ON");
     }
     else {
@@ -360,7 +367,7 @@ void xmlResponse(EthernetClient cl)
     }
     cl.print("</button6>");
     cl.print("<button7>");
-    if (digitalRead(camera2)) {
+    if (digitalRead(bedroom2)) {
         cl.print("ON");
     }
     else {
@@ -384,7 +391,7 @@ void xmlResponse(EthernetClient cl)
     }
     cl.print("</button9>"); //Saracinesca.
     cl.print("<button10>");
-    if (digitalRead(ingresso)) {
+    if (digitalRead(entrance)) {
         cl.print("ON");
     }
     else {
@@ -392,7 +399,7 @@ void xmlResponse(EthernetClient cl)
     }
     cl.print("</button10>");
     cl.print("<button11>");
-    if (allarmeAttivo) {
+    if (alarmOn) {
         cl.print("ON");
     }
     else {
@@ -400,7 +407,7 @@ void xmlResponse(EthernetClient cl)
     }
     cl.print("</button11>");//Reed.
     cl.print("<button12>");
-    if (digitalRead(cucina)) {
+    if (digitalRead(kitchen)) {
         cl.print("ON");
     }
     else {
@@ -408,7 +415,7 @@ void xmlResponse(EthernetClient cl)
     }
     cl.print("</button12>");
     cl.print("<button13>");
-    if (digitalRead(ventole)) {
+    if (digitalRead(fan)) {
         cl.print("ON");
     }
     else {
@@ -416,7 +423,7 @@ void xmlResponse(EthernetClient cl)
     }
     cl.print("</button13>");
     cl.print("<button14>");
-    if (digitalRead(corridoio)) {
+    if (digitalRead(corridor)) {
         cl.print("ON");
     }
     else {
@@ -426,156 +433,140 @@ void xmlResponse(EthernetClient cl)
     
     //--------------------------//
     cl.print("<tempInt>");
-    cl.print(DHTInterno.temperature);//Temperatura Intera.
+    cl.print(DHTin.readTemperature());
     cl.print("</tempInt>");
     cl.print("<umidInt>");
-    cl.print(DHTInterno.humidity);//Umidità interna.
+    cl.print(DHTin.readHumidity());
     cl.print("</umidInt>");
     cl.print("<raffAttuale>");
-    cl.print(raffredTemp); //Temperatura raffreddamento attuale.
+    cl.print(raffredTemp);
     cl.print("</raffAttuale>");
     cl.print("<tempEst>");
-    cl.print(DHTEsterno.temperature);//Temperatura esterna.
+    cl.print(DHTout.readTemperature());
     cl.print("</tempEst>");
     cl.print("<umidEst>");
-    cl.print(DHTEsterno.humidity);//Umidità esterna.
+    cl.print(DHTout.readHumidity());
     cl.print("</umidEst>");
     cl.print("</inputs>");
 }
 
-void leggiURL(String inString)
+void readURL(String inString)
 {
            if (inString.indexOf("?b1o") >0){
-               digitalWrite(scale, HIGH);
-               scriviSuLCD(lcd,"Luce scala ON");
+               digitalWrite(stairs, HIGH);
+               printOnLCD(lcd,"Light stairs ON");
              }
            if (inString.indexOf("?b1f") >0){
-               digitalWrite(scale, LOW);
-               scriviSuLCD(lcd,"Luce scala OFF");
+               digitalWrite(stairs, LOW);
+               printOnLCD(lcd,"Light stairs OFF");
            }
            if (inString.indexOf("?b2o") >0){ 
-               digitalWrite(bagno, HIGH);
-               scriviSuLCD(lcd,"Luce bagno ON");
+               digitalWrite(bathroom, HIGH);
+               printOnLCD(lcd,"Light bathroom ON");
            }
            if (inString.indexOf("?b2f") >0){
-               digitalWrite(bagno, LOW);
-               scriviSuLCD(lcd,"Luce bagno OFF");
+               digitalWrite(bathroom, LOW);
+               printOnLCD(lcd,"Light bathroom OFF");
            }
            
            if (inString.indexOf("?b3o") >0){ 
-               digitalWrite(camera1, HIGH);
-               scriviSuLCD(lcd,"Luce camera1 ON");
+               digitalWrite(bedroom1, HIGH);
+               printOnLCD(lcd,"Light bedroom1 ON");
            }
            if (inString.indexOf("?b3f") >0){
-               digitalWrite(camera1, LOW);
-               scriviSuLCD(lcd,"Luce camera1 OFF");
+               digitalWrite(bedroom1, LOW);
+               printOnLCD(lcd,"Light bedroom1 OFF");
            }
            if (inString.indexOf("?b4o") >0){ //pin 9
-               analogWrite(fontana, 155);
-               scriviSuLCD(lcd,"Fontana ON");
+               analogWrite(fountain, 155);
+               printOnLCD(lcd,"fountain ON");
            }
            if (inString.indexOf("?b4f") >0){
-               analogWrite(fontana, 0);
-               scriviSuLCD(lcd,"Fontana OFF");
+               analogWrite(fountain, 0);
+               printOnLCD(lcd,"fountain OFF");
            }
            if (inString.indexOf("?b5o") >0){ //pin 8
-               digitalWrite(sala, HIGH);
-               scriviSuLCD(lcd,"Luci salotto ON");
+               digitalWrite(livingRoom, HIGH);
+               printOnLCD(lcd,"Luci salotto ON");
            }
            if (inString.indexOf("?b5f") >0){
-               digitalWrite(sala, LOW);
-               scriviSuLCD(lcd,"Luci salotto OFF");
+               digitalWrite(livingRoom, LOW);
+               printOnLCD(lcd,"Luci salotto OFF");
            }
            if (inString.indexOf("?b6o") >0){ //pin 8
-               digitalWrite(camera2, HIGH);
-               scriviSuLCD(lcd,"Luci camera2 ON");
+               digitalWrite(bedroom2, HIGH);
+               printOnLCD(lcd,"Luci bedroom2 ON");
            }
            if (inString.indexOf("?b6f") >0){
-               digitalWrite(camera2 ,LOW);
-               scriviSuLCD(lcd,"Luci camera2 OFF");
+               digitalWrite(bedroom2 ,LOW);
+               printOnLCD(lcd,"Luci bedroom2 OFF");
            }
            if (inString.indexOf("?b7o") >0){ //pin 8
                digitalWrite(garage, HIGH);
-               scriviSuLCD(lcd,"Luce garage ON");
+               printOnLCD(lcd,"Light garage ON");
            }
            if (inString.indexOf("?b7f") >0){
                digitalWrite(garage, LOW);
-               scriviSuLCD(lcd,"Luce garage OFF");
+               printOnLCD(lcd,"Light garage OFF");
            }
           if (inString.indexOf("?b8o") >0){  
-            scriviSuLCD(lcd,"Garage aperto");
-            aperturaGarage();
+            printOnLCD(lcd,"Garage aperto");
+            garageOpen();
             
            }
            if (inString.indexOf("?b8f") >0){ 
-             scriviSuLCD(lcd,"Garage chiuso");
-             chiusuraGarage();
+             printOnLCD(lcd,"Garage chiuso");
+             garageClose();
            } 
            if (inString.indexOf("?b9o") >0){ //pin 8
-               digitalWrite(ingresso, HIGH);
-               scriviSuLCD(lcd,"Luci ingresso ON");
+               digitalWrite(entrance, HIGH);
+               printOnLCD(lcd,"Luci entrance ON");
            }
            if (inString.indexOf("?b9f") >0){
-               digitalWrite(ingresso, LOW);
-               scriviSuLCD(lcd,"Luci ingresso OFF");
+               digitalWrite(entrance, LOW);
+               printOnLCD(lcd,"Luci entrance OFF");
            }
            if (inString.indexOf("?b10o") >0){ //pin 8
-               allarmeAttivo = true;
-               scriviSuLCD(lcd,"Allarme ON");
+               alarmOn = true;
+               printOnLCD(lcd,"alarm ON");
            }
            if (inString.indexOf("?b10f") >0){
-               allarmeAttivo = false;
-               scriviSuLCD(lcd,"Allarme OFF");
-           } // Allarme
+               alarmOn = false;
+               printOnLCD(lcd,"alarm OFF");
+           } // alarm
            if (inString.indexOf("?b11o") >0){ //pin 8
-               digitalWrite(cucina, HIGH);
-               scriviSuLCD(lcd,"Luce cucina ON");
+               digitalWrite(kitchen, HIGH);
+               printOnLCD(lcd,"Light kitchen ON");
            }
            if (inString.indexOf("?b11f") >0){
-               digitalWrite(cucina, LOW);
-               scriviSuLCD(lcd,"Luce cucina OFF");
+               digitalWrite(kitchen, LOW);
+               printOnLCD(lcd,"Light kitchen OFF");
            }
            if (inString.indexOf("?b12o") >0){ //pin 8
-               digitalWrite(ventole, HIGH);
-               scriviSuLCD(lcd,"Ventole ON");
+               digitalWrite(fan, HIGH);
+               printOnLCD(lcd,"fan ON");
            }
            if (inString.indexOf("?b12f") >0){
-               digitalWrite(ventole, LOW);
-               scriviSuLCD(lcd,"Ventole OFF");
+               digitalWrite(fan, LOW);
+               printOnLCD(lcd,"fan OFF");
            }
            if (inString.indexOf("?b13o") >0){ //pin 8
-               digitalWrite(corridoio, HIGH);
-               scriviSuLCD(lcd,"Luce corridoio ON");
+               digitalWrite(corridor, HIGH);
+               printOnLCD(lcd,"Light corridor ON");
            }
            if (inString.indexOf("?b13f") >0){
-               digitalWrite(corridoio, LOW);
-               scriviSuLCD(lcd,"Luce corridoio OFF");
+               digitalWrite(corridor, LOW);
+               printOnLCD(lcd,"Light corridor OFF");
            }
            
 }
 
-dht11 leggiTemp(dht11 dht, int dht_pin,int temp, int umid)
+DHT readTemp(DHT dht, int dht_pin)
 {
-	int chk;
- 	chk = dht.read(dht_pin);    // READ DATA
-  	switch (chk){
-    case DHTLIB_OK:  
-                Serial.print("OK,\n"); 
-                break;
-    case DHTLIB_ERROR_CHECKSUM: 
-                Serial.print("Checksum error,\n"); 
-                break;
-    case DHTLIB_ERROR_TIMEOUT: 
-                Serial.print("Time out error,\n"); 
-                break;
-    default: 
-                Serial.print("Unknown error,\n"); 
-                break;
-  }
- // DISPLAY DATA
-  Serial.print(dht.humidity,1);
+  // DISPLAY DATA
+  Serial.print(dht.readHumidity(),1);
   Serial.print(",\n");
-  Serial.println(dht.temperature,1);
+  Serial.println(dht.readTemperature(),1);
   return dht;
 }
 
@@ -639,20 +630,20 @@ byte getPage(IPAddress ipBuf,int thisPort, char *page)
   return 1;
 }
 
-void luciEsterne()
+void outsideLight()
 {
-  luminosi = analogRead(crepuscolare);
-  //Serial.println(luminosi);
-  if (luminosi>950)
-    digitalWrite(esterno,HIGH);
+  brightness = analogRead(crepuscular);
+  //Serial.println(brightness);
+  if (brightness>950)
+    digitalWrite(outisde,HIGH);
   else
-    digitalWrite(esterno,LOW);
+    digitalWrite(outisde,LOW);
 }
 
-void aperturaGarage()
+void garageOpen()
 {
   if (x==0){
-  blink(portaGarage);
+  blink(garageDoor);
   for(i=0;i<24;i++)
   {
     poscorrdx = Adx[i];
@@ -661,7 +652,7 @@ void aperturaGarage()
     dx.write(poscorrdx);
     sx.write(poscorrsx);
     delay(150);
-    digitalWrite(portaGarage,StatoLed[i]);
+    digitalWrite(garageDoor,ledStatus[i]);
     Serial.print("Indice");
     Serial.print(i);
     Serial.print(" DX:");
@@ -669,16 +660,16 @@ void aperturaGarage()
     Serial.print(" SX:");
     Serial.println(poscorrsx);
   }
-  blink(portaGarage);
+  blink(garageDoor);
   delay(450);
-  digitalWrite(portaGarage,0);
+  digitalWrite(garageDoor,0);
   x=1;}
 }
 
-void  chiusuraGarage()
+void  garageClose()
 {
   if (x==1){
-  blink(portaGarage);
+  blink(garageDoor);
   for(j=0;j<25;j++)
   {
     poscorrdx = Cdx[j];
@@ -687,7 +678,7 @@ void  chiusuraGarage()
     dx.write(poscorrdx);
     sx.write(poscorrsx);
     delay(150);
-    digitalWrite(portaGarage,StatoLed[j]);
+    digitalWrite(garageDoor,ledStatus[j]);
     Serial.print("Indice");
     Serial.print(j);
     Serial.print(" DX:");
@@ -695,9 +686,9 @@ void  chiusuraGarage()
     Serial.print(" SX:");
     Serial.println(poscorrsx);
      }
-     blink(portaGarage);
+     blink(garageDoor);
      delay(450);
-    digitalWrite(portaGarage,0);
+    digitalWrite(garageDoor,0);
     x=0;}
 }  
 void blink(int led)
@@ -712,24 +703,24 @@ void blink(int led)
   digitalWrite(led,1);
 }
 
-void allarmeIngresso()
+void alarm()
 {
-  if(allarmeAttivo == true ){
+  if(alarmOn == true ){
       if(digitalRead(reed) == 1)
       {
-      tone(cigalino,3622);
+      tone(buzzer,3622);
       
       delay(300);
-      tone(cigalino,3622);
-      blink(allarme);
+      tone(buzzer,3622);
+      blink(alarm);
       
-      noTone(cigalino);
-      digitalWrite(allarme,LOW);
+      noTone(buzzer);
+      digitalWrite(alarm,LOW);
       }
   }
 }
 
-void scriviSuLCD(LiquidCrystal lcd, String mess)
+void printOnLCD(LiquidCrystal lcd, String mess)
 {
       lcd.clear();
       lcd.setCursor(0,1);
