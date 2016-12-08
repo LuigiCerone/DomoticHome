@@ -9,4 +9,9 @@ Dependecies:
   DHT11 library for Arduino.
   https://github.com/adafruit/DHT-sensor-library/archive/master.zip
   
+Contents:
+HTM folder contains all the web pages for Arduino SD card reader.
+DomoticHouse contains Arduino's code.
+
+  
  All othere pages and code will be added as soon as possible.
