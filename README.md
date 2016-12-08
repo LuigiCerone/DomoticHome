@@ -7,7 +7,8 @@ https://www.youtube.com/watch?v=FA91QIYKh5I&t=2s
 
 <h3>Dependencies:</h3><p>
   DHT11 library for Arduino.
-  https://github.com/adafruit/DHT-sensor-library/archive/master.zip</p>
+  https://github.com/adafruit/DHT-sensor-library/archive/master.zip<br>
+  PHP library for drawing chart. http://www.pchart.net/download</p>
   
 <h3>Contents:</h3>
 <ul>
