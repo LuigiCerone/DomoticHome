@@ -5,7 +5,7 @@ The project is quite old and since the time I did it I've tried to improve my sk
 A <b>video example</b> is here:
 https://www.youtube.com/watch?v=FA91QIYKh5I&t=2s
 
-<h3>Dependecies:</h3><p>
+<h3>Dependencies:</h3><p>
   DHT11 library for Arduino.
   https://github.com/adafruit/DHT-sensor-library/archive/master.zip</p>
   
