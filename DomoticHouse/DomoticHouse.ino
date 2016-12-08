@@ -55,11 +55,6 @@ EthernetClient client;
 DHT DHTin(DHT11in_PIN, DHTTYPE);
 DHT DHTout(DHT11out_PIN, DHTTYPE);
 
-int intTemp = 0,
-	outTemp = 0,
-	intHum = 0,
-	outHum = 0;
-
 int raffredTemp=20; // Temperature for cooling the living room.
 
 #define reed  33 // Reed sensor's pin for detecting illegal entry.
